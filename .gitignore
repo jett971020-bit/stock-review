@@ -1,0 +1,6 @@
+.python_packages/
+__pycache__/
+*.pyc
+*.log
+.streamlit/
+stock_review_data.json
