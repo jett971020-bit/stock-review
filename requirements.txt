@@ -1,0 +1,5 @@
+akshare>=1.16.0
+streamlit>=1.36.0
+plotly>=5.22.0
+pandas>=2.0.0
+requests>=2.22.0
