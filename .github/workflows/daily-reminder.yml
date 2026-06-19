@@ -1,0 +1,34 @@
+name: Daily stock reminder
+
+on:
+  schedule:
+    # 14:30 Asia/Shanghai = 06:30 UTC, weekdays.
+    - cron: "30 6 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send reminder
+        env:
+          GITHUB_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+          GIST_FILENAME: ${{ secrets.GIST_FILENAME }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          PULLBACK_VOLUME_RATIO: ${{ vars.PULLBACK_VOLUME_RATIO || '0.8' }}
+          PULLBACK_TOLERANCE_PCT: ${{ vars.PULLBACK_TOLERANCE_PCT || '2.0' }}
+        run: python reminder.py
