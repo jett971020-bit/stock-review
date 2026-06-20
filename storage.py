@@ -46,21 +46,28 @@ def load_app_data() -> dict[str, Any]:
     gist = _gist_config()
     if gist:
         token, gist_id, filename = gist
-        response = requests.get(
-            f"{GIST_API}/{gist_id}",
-            headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
-            timeout=20,
-        )
-        response.raise_for_status()
-        files = response.json().get("files", {})
-        content = files.get(filename, {}).get("content")
-        if content:
-            return _normalized(json.loads(content))
-        return DEFAULT_DATA.copy()
+        try:
+            response = requests.get(
+                f"{GIST_API}/{gist_id}",
+                headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+                timeout=20,
+            )
+            response.raise_for_status()
+            files = response.json().get("files", {})
+            content = files.get(filename, {}).get("content")
+            if content:
+                return _normalized(json.loads(content))
+            return DEFAULT_DATA.copy()
+        except (json.JSONDecodeError, requests.RequestException):
+            return _load_local_data()
 
-    if not DATA_FILE.exists():
-        return DEFAULT_DATA.copy()
+    return _load_local_data()
+
+
+def _load_local_data() -> dict[str, Any]:
     try:
+        if not DATA_FILE.exists():
+            return DEFAULT_DATA.copy()
         return _normalized(json.loads(DATA_FILE.read_text(encoding="utf-8")))
     except (json.JSONDecodeError, OSError):
         return DEFAULT_DATA.copy()
@@ -73,13 +80,16 @@ def save_app_data(data: dict[str, Any]) -> None:
 
     if gist:
         token, gist_id, filename = gist
-        response = requests.patch(
-            f"{GIST_API}/{gist_id}",
-            headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
-            json={"files": {filename: {"content": content}}},
-            timeout=20,
-        )
-        response.raise_for_status()
-        return
+        try:
+            response = requests.patch(
+                f"{GIST_API}/{gist_id}",
+                headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+                json={"files": {filename: {"content": content}}},
+                timeout=20,
+            )
+            response.raise_for_status()
+            return
+        except requests.RequestException:
+            pass
 
     DATA_FILE.write_text(content, encoding="utf-8")
